@@ -8,4 +8,8 @@ import com.arellomobile.mvp.viewstate.strategy.StateStrategyType
 interface MainView : MvpView {
     fun moveProgress(progress: Int)
     fun setProgressSeek(progress: Int)
+    fun setMaxProgress(maxProgress: Int)
+    fun onStartTrack(trackName: String, trackAuthor: String)
+    fun onStopTrack()
+
 }

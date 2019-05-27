@@ -1,10 +1,10 @@
 package com.example.android.progressplayer.presenter
 
-import android.view.MotionEvent
-import android.widget.SeekBar
 import com.arellomobile.mvp.InjectViewState
 import com.arellomobile.mvp.MvpPresenter
 import com.example.android.progressplayer.*
+import com.example.android.progressplayer.model.TrackExample
+import com.example.android.progressplayer.model.TrackModel
 import com.example.android.progressplayer.view.MainView
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -16,73 +16,82 @@ import java.util.concurrent.TimeUnit
 class MainPresenter : MvpPresenter<MainView>() {
 
     private val disposeBag = CompositeDisposable()
-    private var duration: Long = 0
-    private var startTime: Long = 0
+    private val disposeTrack = CompositeDisposable()
+    val trackExample = TrackExample()
+    val tracklist = arrayListOf<TrackModel>()
+
+    lateinit var playTrack: TrackModel
+    var countTrack = 0
 
     fun initPauseProgress() {
-        disposeBag.clear()
+        disposeTrack.clear()
     }
 
-    fun initNextProgress() {
-        viewState.moveProgress(STEP_MOVE_UP)
+    fun initNextTrack() {
+        if (countTrack != tracklist.size - 1) {
+            countTrack++
+            playTrack = tracklist[countTrack]
+            initStopProgress()
+            initStartProgress(0)
+        }
     }
 
-    fun initPreviewProgress() {
-        viewState.moveProgress(STEP_MOVE_DOWN)
+    fun initPreviewTrack() {
+        if (countTrack != 0) {
+            countTrack--
+            playTrack = tracklist[countTrack]
+            initStopProgress()
+            initStartProgress(0)
+        }
     }
 
     fun initStartProgress(progress: Long) {
-        disposeBag.add(timing()
-            .take(MAX_SEEK_BAR - progress)
-            .subscribeOn(Schedulers.io())
+        viewState.onStartTrack(playTrack.trackName, playTrack.trackAutor)
+        viewState.setMaxProgress(playTrack.trackTime)
+        timing()
+            .take(playTrack.trackTime - progress)
             .observeOn(AndroidSchedulers.mainThread())
+            .doOnComplete { initNextTrack() }
             .subscribe { viewState.moveProgress(STEP_SEEK_BAR) }
-        )
+            .let { disposeTrack.add(it) }
     }
 
     fun initStopProgress() {
-        disposeBag.clear()
+        initPauseProgress()
         viewState.setProgressSeek(0)
+        viewState.onStopTrack()
     }
 
     private fun timing(): Observable<Long> {
-        return Observable.interval(1000, TimeUnit.MILLISECONDS)
+        return Observable.interval(1, TimeUnit.SECONDS)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         disposeBag.clear()
+        disposeTrack.clear()
     }
 
-    fun initChangeProgress(seekBar: SeekBar?) {
+    fun initChangeProgressOnTouch(seekBar: Int?) {
         seekBar?.let {
             initPauseProgress()
-            initStartProgress(seekBar.progress.toLong())
+            initStartProgress(seekBar.toLong())
         }
     }
 
-    fun initRightFrameTouch(v: MotionEvent?): Boolean {
-        return initDoubleClick(v, RIGHT)
+    fun initTrackList() {
+        trackExample.getTrackList()
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnComplete { playTrack = tracklist[countTrack] }
+            .subscribe { tracklist.add(it) }
+            .let { disposeBag.add(it) }
     }
 
-    fun initLeftFrameTouch(v: MotionEvent?): Boolean {
-        return initDoubleClick(v, LEFT)
-    }
-
-    private fun initDoubleClick(event: MotionEvent?, side: Int): Boolean {
-        if (event?.action == MotionEvent.ACTION_DOWN) {
-            duration = System.currentTimeMillis() - startTime
-            when {
-                duration > DURATION_DOUBLE_CLICK -> {
-                    startTime = System.currentTimeMillis()
-                    return false
-                }
-                side == RIGHT -> initNextProgress()
-                side == LEFT -> initPreviewProgress()
-            }
-            startTime = System.currentTimeMillis()
-            return true
+    fun initLongPress(side: Int) {
+        when (side) {
+            RIGHT -> viewState.moveProgress(STEP_MOVE_UP)
+            LEFT -> viewState.moveProgress(STEP_MOVE_DOWN)
         }
-        return false
     }
 }
