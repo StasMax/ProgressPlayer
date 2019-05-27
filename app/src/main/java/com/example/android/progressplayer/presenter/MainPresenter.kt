@@ -17,20 +17,19 @@ class MainPresenter : MvpPresenter<MainView>() {
 
     private val disposeBag = CompositeDisposable()
     private val disposeTrack = CompositeDisposable()
-    val trackExample = TrackExample()
-    val tracklist = arrayListOf<TrackModel>()
-
+    private val trackExample = TrackExample()
+    private val trackList = arrayListOf<TrackModel>()
     lateinit var playTrack: TrackModel
-    var countTrack = 0
+    private var countTrack = 0
 
     fun initPauseProgress() {
         disposeTrack.clear()
     }
 
     fun initNextTrack() {
-        if (countTrack != tracklist.size - 1) {
+        if (countTrack != trackList.size - 1) {
             countTrack++
-            playTrack = tracklist[countTrack]
+            playTrack = trackList[countTrack]
             initStopProgress()
             initStartProgress(0)
         }
@@ -39,7 +38,7 @@ class MainPresenter : MvpPresenter<MainView>() {
     fun initPreviewTrack() {
         if (countTrack != 0) {
             countTrack--
-            playTrack = tracklist[countTrack]
+            playTrack = trackList[countTrack]
             initStopProgress()
             initStartProgress(0)
         }
@@ -83,8 +82,8 @@ class MainPresenter : MvpPresenter<MainView>() {
         trackExample.getTrackList()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .doOnComplete { playTrack = tracklist[countTrack] }
-            .subscribe { tracklist.add(it) }
+            .doOnComplete { playTrack = trackList[countTrack] }
+            .subscribe { trackList.add(it) }
             .let { disposeBag.add(it) }
     }
 
