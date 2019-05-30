@@ -1,5 +1,6 @@
 package com.example.android.progressplayer.presenter
 
+import android.os.Handler
 import com.arellomobile.mvp.InjectViewState
 import com.arellomobile.mvp.MvpPresenter
 import com.example.android.progressplayer.*
@@ -14,7 +15,7 @@ import java.util.concurrent.TimeUnit
 
 @InjectViewState
 class MainPresenter : MvpPresenter<MainView>() {
-
+    private var isPressed = false
     private val disposeBag = CompositeDisposable()
     private val disposeTrack = CompositeDisposable()
     private val trackExample = TrackExample()
@@ -87,10 +88,27 @@ class MainPresenter : MvpPresenter<MainView>() {
             .let { disposeBag.add(it) }
     }
 
-    fun initLongPress(side: Int) {
-        when (side) {
-            RIGHT -> viewState.moveProgress(STEP_MOVE_UP)
-            LEFT -> viewState.moveProgress(STEP_MOVE_DOWN)
+    fun initLongPress(side: Int, b: Boolean) {
+        isPressed = b
+        Thread(MyThread(side)).start()
+    }
+
+    inner class MyThread(private val side: Int) : Runnable {
+        private val handler = Handler()
+        override fun run() {
+            while (isPressed) {
+                when (side) {
+                    RIGHT -> {
+                        handler.post { viewState.moveProgress(STEP_MOVE_UP) }
+                        Thread.sleep(300)
+                    }
+
+                    LEFT -> {
+                        handler.post { viewState.moveProgress(STEP_MOVE_DOWN) }
+                        Thread.sleep(300)
+                    }
+                }
+            }
         }
     }
 }

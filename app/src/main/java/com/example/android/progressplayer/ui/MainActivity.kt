@@ -1,22 +1,14 @@
 package com.example.android.progressplayer.ui
 
-import android.content.Context
-import android.graphics.Point
 import android.os.Bundle
-import android.os.SystemClock
-import android.util.Log
-import android.view.GestureDetector
+import android.os.Handler
 import android.view.MotionEvent
 import android.view.View
-import android.widget.Chronometer
 import android.widget.SeekBar
 import com.arellomobile.mvp.MvpAppCompatActivity
 import com.arellomobile.mvp.presenter.InjectPresenter
-import com.example.android.progressplayer.LEFT
-import com.example.android.progressplayer.R
-import com.example.android.progressplayer.RIGHT
+import com.example.android.progressplayer.*
 import com.example.android.progressplayer.presenter.MainPresenter
-import com.example.android.progressplayer.runTimer
 import com.example.android.progressplayer.view.MainView
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -26,7 +18,7 @@ class MainActivity : MvpAppCompatActivity(), MainView {
     lateinit var mainPresenter: MainPresenter
     private var isPause = true
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+      override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         initSeekBar()
@@ -52,26 +44,21 @@ class MainActivity : MvpAppCompatActivity(), MainView {
 
     private fun initFrames() {
 
-        val gestureDoubleTapR = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDoubleTap(e: MotionEvent?): Boolean {
-                mainPresenter.initNextTrack()
-                return super.onDoubleTap(e)
+        rightFrame.setOnTouchListener { _, event ->
+            when (event?.action) {
+                MotionEvent.ACTION_UP -> mainPresenter.initLongPress(RIGHT, false)
+                MotionEvent.ACTION_DOWN -> mainPresenter.initLongPress(RIGHT, true)
             }
-        })
+            true
+        }
 
-        rightFrame.setOnTouchListener { _, event -> gestureDoubleTapR.onTouchEvent(event) }
-
-
-        val gestureDoubleTapL = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDoubleTap(e: MotionEvent?): Boolean {
-                mainPresenter.initPreviewTrack()
-                return super.onDoubleTap(e)
+        leftFrame.setOnTouchListener { _, event ->
+            when (event?.action) {
+                MotionEvent.ACTION_UP -> mainPresenter.initLongPress(LEFT, false)
+                MotionEvent.ACTION_DOWN -> mainPresenter.initLongPress(LEFT, true)
             }
-        })
-
-        leftFrame.setOnTouchListener { _, event -> gestureDoubleTapL.onTouchEvent(event) }
-
-
+            true
+        }
     }
 
     override fun moveProgress(progress: Int) {
